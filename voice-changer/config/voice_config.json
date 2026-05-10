@@ -6,7 +6,7 @@
       "name": "女声 1（轻柔）",
       "description": "使用 Pedalboard 进行高质量音高调整和音色变换",
       "method": "pedalboard",
-      "pitch_shift": 4,
+      "pitch_shift": 3,
       "voice_type": "female"
     },
     "female_2": {
@@ -34,7 +34,7 @@
       "name": "男声（正常）",
       "description": "使用 Pedalboard 转换成正常男声",
       "method": "pedalboard",
-      "pitch_shift": -3,
+      "pitch_shift": -2,
       "voice_type": "male"
     },
     "child": {
