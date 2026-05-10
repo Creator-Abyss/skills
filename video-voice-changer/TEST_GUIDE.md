@@ -1,7 +1,7 @@
 # video-voice-changer Skill 测试指南
 
 ## 测试日期
-2026-01-21
+2026-05-10
 
 ## 一、环境准备
 
@@ -36,15 +36,15 @@ ls ~/.claude/skills/voice-changer/scripts/voice_change.py
 
 **步骤**:
 ```bash
-# 使用测试视频（会覆盖原视频，建议先复制）
-cp test_video.mp4 test_video_backup.mp4
-
+# 使用测试视频（默认会生成 test_video_vc.mp4，不覆盖原视频）
 python3 ~/.claude/skills/video-voice-changer/scripts/video_voice_change.py \
   test_video.mp4
 ```
 
 **预期结果**:
 - 视频被处理
+- 生成 `test_video_vc.mp4`
+- 原视频 `test_video.mp4` 保持不变
 - 音调提高（女声效果）
 - 视频画质保持不变
 - 时长保持不变
@@ -52,9 +52,9 @@ python3 ~/.claude/skills/video-voice-changer/scripts/video_voice_change.py \
 **验证**:
 ```bash
 # 播放验证
-open test_video.mp4  # macOS
+open test_video_vc.mp4  # macOS
 # 或
-vlc test_video.mp4   # Linux
+vlc test_video_vc.mp4   # Linux
 ```
 
 ### 2.2 测试 2: 指定声音类型
@@ -95,7 +95,7 @@ python3 ~/.claude/skills/video-voice-changer/scripts/video_voice_change.py \
 - 生成 `test_video_output.mp4`
 - 原视频 `test_video.mp4` 保持不变
 
-### 2.4 测试 4: 保留原始音频
+### 2.4 测试 4: 保存变声后的音频副本
 
 **目的**: 验证保留音频功能
 
@@ -108,7 +108,8 @@ python3 ~/.claude/skills/video-voice-changer/scripts/video_voice_change.py \
 
 **预期结果**:
 - 视频被处理
-- 生成 `test_video_voice_changed.mp3`（原始音频）
+- 生成 `test_video_voice_changed.mp3`（变声后的音频副本）
+- 保留处理过程中的临时音频文件
 
 ### 2.5 测试 5: 查看帮助信息
 
@@ -151,6 +152,7 @@ time python3 ~/.claude/skills/video-voice-changer/scripts/video_voice_change.py 
 ```
 
 **预期结果**:
+- 生成 `short_video_vc.mp4`
 - 处理时间: < 30 秒
 - 内存占用: < 200MB
 
@@ -165,6 +167,7 @@ time python3 ~/.claude/skills/video-voice-changer/scripts/video_voice_change.py 
 ```
 
 **预期结果**:
+- 生成 `long_video_vc.mp4`
 - 处理时间: 30-60 秒
 - 无崩溃或超时
 

@@ -1,21 +1,24 @@
 # video-voice-changer
 
 > 仓库地址: https://github.com/wlzh/skills
-> 版本: v1.1.0
+> 版本: v1.1.1
 
 视频变声处理工具 - 对视频中的音频进行变声处理
 
 ## 快速开始
 
 ```bash
-# 基本用法（转换为女声，覆盖原视频）
+# 基本用法（创建新文件: input_vc.mp4）
 python3 ~/.claude/skills/video-voice-changer/scripts/video_voice_change.py input.mp4
 
 # 指定声音类型
 python3 ~/.claude/skills/video-voice-changer/scripts/video_voice_change.py input.mp4 -v male_deep
 
-# 指定输出文件（不覆盖原视频）
+# 指定输出文件
 python3 ~/.claude/skills/video-voice-changer/scripts/video_voice_change.py input.mp4 -o output.mp4
+
+# 覆盖原视频文件（需显式加 --overwrite）
+python3 ~/.claude/skills/video-voice-changer/scripts/video_voice_change.py input.mp4 --overwrite
 ```
 
 ## 功能特性
@@ -25,6 +28,7 @@ python3 ~/.claude/skills/video-voice-changer/scripts/video_voice_change.py input
 - 保持原视频质量
 - 临时文件自动清理
 - 支持多种声音预设
+- 默认不覆盖原视频
 
 ## 依赖要求
 
@@ -51,15 +55,17 @@ sudo apt-get install ffmpeg
 
 ```
 usage: video_voice_change.py [-h] [-v VOICE] [-o OUTPUT] [-c CONFIG]
-                             [--keep-audio] [--temp-dir TEMP_DIR]
+                             [--overwrite] [--keep-audio]
+                             [--temp-dir TEMP_DIR]
                              input_video
 
 参数:
   input_video           输入视频文件
   -v, --voice          声音类型（默认: female_1）
-  -o, --output         输出文件路径（默认: 覆盖原视频）
+  -o, --output         输出文件路径（默认: 原文件名_vc.后缀）
+  --overwrite          覆盖原视频文件（默认: 创建新文件）
   -c, --config         voice-changer 配置文件路径
-  --keep-audio         保留提取的原始音频文件
+  --keep-audio         保留处理过程中的临时音频文件，并保存变声后的音频副本
   --temp-dir           自定义临时目录
 ```
 
@@ -79,7 +85,14 @@ python3 ~/.claude/skills/video-voice-changer/scripts/video_voice_change.py \
   -o video_male.mp4
 ```
 
-### 示例 3: 保留原始音频
+### 示例 3: 覆盖原视频
+```bash
+python3 ~/.claude/skills/video-voice-changer/scripts/video_voice_change.py \
+  video.mp4 \
+  --overwrite
+```
+
+### 示例 4: 保存变声后的音频副本
 ```bash
 python3 ~/.claude/skills/video-voice-changer/scripts/video_voice_change.py \
   video.mp4 \
@@ -101,10 +114,11 @@ python3 ~/.claude/skills/video-voice-changer/scripts/video_voice_change.py \
 
 ## 注意事项
 
-1. 默认会覆盖原视频，建议先用 `-o` 参数测试
+1. 默认不会覆盖原视频，会生成 `原文件名_vc.后缀`
 2. 视频编码保持不变，只替换音频
 3. 处理大文件需要足够的磁盘空间
 4. 音频编码为 AAC 格式
+5. 如需覆盖原视频，必须显式传入 `--overwrite`
 
 ## 故障排除
 
@@ -117,6 +131,11 @@ python3 ~/.claude/skills/video-voice-changer/scripts/video_voice_change.py \
 - 检查磁盘空间是否充足
 
 ## 更新记录
+
+### v1.1.1 (2026-05-10)
+- 修复 `SKILL.md` 缺少 YAML frontmatter 导致 skill 无法加载的问题
+- 同步 README 中默认不覆盖原视频的行为说明
+- 更新 `--keep-audio` 的命令行说明
 
 ### v1.0.0 (2026-01-21)
 - 首次发布

@@ -1,5 +1,23 @@
 # Changelog
 
+## v1.1.1 - 2026-05-10
+
+### 修复
+
+- 修复 `SKILL.md` 缺少 YAML frontmatter 导致 skill loader 跳过 `video-voice-changer` 的问题。
+- 为 skill metadata 增加 `name`、`description`、`version` 和 `author` 字段。
+
+### 文档
+
+- README、测试指南和命令行帮助统一说明默认行为：默认创建 `原文件名_vc.后缀`，只有传入 `--overwrite` 才覆盖原视频。
+- 更新 `--keep-audio` 说明，明确它会保留处理过程中的临时音频文件，并保存变声后的音频副本。
+
+## v1.1.0 - 2026-02-19
+
+### 文档
+
+- 为 README 添加仓库地址和版本信息。
+
 ## v1.0.0 - 2026-01-21
 
 ### 🎉 首次发布

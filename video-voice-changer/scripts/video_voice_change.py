@@ -177,7 +177,7 @@ def main():
                        help='覆盖原视频文件（默认: 创建新文件）')
     parser.add_argument('-c', '--config', help='voice-changer 配置文件路径')
     parser.add_argument('--keep-audio', action='store_true',
-                       help='保留提取的原始音频文件')
+                       help='保留处理过程中的临时音频文件，并保存变声后的音频副本')
     parser.add_argument('--temp-dir', help='自定义临时目录')
 
     args = parser.parse_args()
@@ -271,7 +271,7 @@ def main():
         if args.keep_audio:
             audio_output = input_path.parent / f"{input_path.stem}_voice_changed.mp3"
             shutil.copy2(changed_audio, audio_output)
-            print(f"原始音频已保存: {audio_output}")
+            print(f"变声后音频已保存: {audio_output}")
 
     finally:
         # 清理临时文件
