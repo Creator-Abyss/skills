@@ -13,6 +13,7 @@ from datetime import datetime
 from pathlib import Path
 import subprocess
 import shutil
+
 try:
     import yt_dlp
 except ImportError:
@@ -27,6 +28,7 @@ MAX_DESCRIPTION_LENGTH = 160  # Google SEO recommended
 MAX_KEYWORDS = 8  # Optimal number for SEO
 MIN_KEYWORD_LENGTH = 2
 MAX_KEYWORD_LENGTH = 20
+MAX_FILENAME_LENGTH = 50  # Short, readable URLs perform better
 
 # Stop words to filter from keywords
 STOP_WORDS = {
@@ -250,103 +252,173 @@ def extract_video_id(url):
 
 def generate_english_filename(title, video_id=None):
     """Generate SEO-friendly English filename from video title"""
-    # Enhanced keyword mapping for better SEO
-    keyword_map = {
+    # Phrase mapping is ordered by length so Chinese titles keep meaningful words
+    # instead of turning into concatenated fragments.
+    keyword_map = [
+        # High-value phrases
+        ('claude code', 'claude-code'),
+        ('happy coder', 'happy-coder'),
+        ('手机远程控制', 'mobile-remote-control'),
+        ('远程控制', 'remote-control'),
+        ('安装配置', 'install-config'),
+        ('全教程', 'tutorial'),
+        ('保姆级教程', 'step-by-step-tutorial'),
+        ('小白教程', 'beginner-tutorial'),
+        ('临时邮箱', 'temp-email'),
+        ('域名邮箱', 'domain-email'),
+        ('中转站', 'proxy-station'),
+        ('开源项目', 'open-source'),
+        ('自建中继', 'self-hosted-relay'),
+        ('会话管理', 'session-management'),
+        ('国内网络', 'china-network'),
+        ('网络问题', 'network-issues'),
+        ('全链路', 'end-to-end'),
+        ('加密', 'encryption'),
+        ('科学上网', 'vpn'),
+        ('人工智能', 'ai'),
+        ('机器学习', 'ml'),
+        ('深度学习', 'deep-learning'),
+        ('云计算', 'cloud'),
+        ('容器化', 'docker'),
         # Common words
-        '教程': 'tutorial',
-        '指南': 'guide',
-        '工具': 'tools',
-        '技术': 'tech',
-        '免费': 'free',
-        '域名': 'domain',
-        '服务器': 'server',
-        '支付': 'payment',
-        '卡': 'card',
-        '银行卡': 'bank-card',
-        '虚拟': 'virtual',
-        '注册': 'register',
-        '申请': 'apply',
-        '设置': 'setup',
-        '配置': 'config',
-        '开发': 'dev',
-        '学习': 'study',
-        '入门': 'beginner',
-        '进阶': 'advanced',
-        '详解': 'detail',
-        '使用': 'usage',
-        '安装': 'install',
-        '部署': 'deploy',
-        '测试': 'test',
-        '优化': 'optimize',
-        '分析': 'analysis',
-        '介绍': 'intro',
-        '什么是': 'what-is',
-        '如何': 'how-to',
-        '为什么': 'why',
-        '最佳': 'best',
-        '推荐': 'recommend',
-        '对比': 'compare',
-        '评测': 'review',
-        '的': '',
-        '和': 'and',
-        '与': 'and',
-        '或': 'or',
-        '（': '-',
-        '）': '',
-        '(': '-',
-        ')': '',
-        '：': '-',
-        ':': '-',
-        '！': '',
-        '!': '',
-        '？': '',
-        '?': '',
-        '，': '-',
-        ',': '-',
-        '。': '',
-        '.': '',
-        ' ': '-',
-        '--': '-',
-        '【': '',
-        '】': '',
-        '《': '',
-        '》': '',
-        # Tech terms
-        '科学上网': 'vpn',
-        'vps': 'vps',
-        'ai': 'ai',
-        '人工智能': 'ai',
-        '机器学习': 'ml',
-        '深度学习': 'deep-learning',
-        '区块链': 'blockchain',
-        '云计算': 'cloud',
-        '容器化': 'docker',
-        '微服务': 'microservice',
-        '前端': 'frontend',
-        '后端': 'backend',
-        '全栈': 'fullstack',
-    }
+        ('教程', 'tutorial'),
+        ('指南', 'guide'),
+        ('工具', 'tools'),
+        ('技术', 'tech'),
+        ('免费', 'free'),
+        ('域名', 'domain'),
+        ('服务器', 'server'),
+        ('支付', 'payment'),
+        ('银行卡', 'bank-card'),
+        ('虚拟', 'virtual'),
+        ('注册', 'register'),
+        ('申请', 'apply'),
+        ('设置', 'setup'),
+        ('配置', 'config'),
+        ('开发', 'dev'),
+        ('学习', 'study'),
+        ('入门', 'beginner'),
+        ('进阶', 'advanced'),
+        ('详解', 'detail'),
+        ('使用', 'usage'),
+        ('安装', 'install'),
+        ('部署', 'deploy'),
+        ('测试', 'test'),
+        ('优化', 'optimize'),
+        ('分析', 'analysis'),
+        ('介绍', 'intro'),
+        ('什么是', 'what-is'),
+        ('如何', 'how-to'),
+        ('为什么', 'why'),
+        ('最佳', 'best'),
+        ('推荐', 'recommend'),
+        ('对比', 'compare'),
+        ('评测', 'review'),
+        ('最新', ''),
+        ('手机', 'mobile'),
+        ('电脑', 'desktop'),
+        ('远程', 'remote'),
+        ('控制', 'control'),
+        ('卡', 'card'),
+    ]
 
-    # Replace Chinese and special characters
     filename = title.lower()
-    for cn, en in keyword_map.items():
-        filename = filename.replace(cn, en)
+    for cn, en in sorted(keyword_map, key=lambda item: len(item[0]), reverse=True):
+        replacement = f" {en} " if en else " "
+        filename = filename.replace(cn.lower(), replacement)
 
-    # Remove any remaining non-ASCII characters
-    filename = re.sub(r'[^\x00-\x7f]', '', filename)
-    filename = re.sub(r'[^\w\s-]', '', filename)
-    filename = re.sub(r'[\s]+', '-', filename)
-    filename = filename.strip('-')
+    # Normalize remaining punctuation/unknown characters into separators.
+    filename = re.sub(r'[^\x00-\x7f]', '-', filename)
+    filename = re.sub(r'[^a-z0-9]+', '-', filename)
+    filename = re.sub(r'-{2,}', '-', filename).strip('-')
+    tokens = [token for token in filename.split('-') if token]
+    tokens = optimize_filename_tokens(tokens)
+    filename = '-'.join(tokens)
 
     # If filename is too short or empty, use video ID
     if len(filename) < 5 or not filename:
         filename = f"youtube-{video_id}" if video_id else "video-post"
 
     # Limit length for SEO (shorter URLs are better)
-    if len(filename) > 50:
-        filename = filename[:50].rstrip('-')
+    if len(filename) > MAX_FILENAME_LENGTH:
+        filename = trim_filename(filename, MAX_FILENAME_LENGTH)
 
     return filename
+
+
+def optimize_filename_tokens(tokens):
+    """Keep filename tokens short, deduplicated, and keyword-first."""
+    low_value = {
+        '2023', '2024', '2025', '2026', 'latest', 'new', 'full', 'complete',
+        'best', 'how', 'to', 'the', 'and', 'or',
+    }
+    filtered = []
+    for token in tokens:
+        if token in low_value:
+            continue
+        if token not in filtered:
+            filtered.append(token)
+
+    product_prefixes = [
+        ['claude', 'code'],
+        ['happy'],
+        ['chatgpt'],
+        ['openai'],
+        ['cloudflare'],
+        ['vps'],
+        ['cpa'],
+    ]
+
+    prioritized = []
+    remaining = filtered[:]
+    for sequence in product_prefixes:
+        if all(token in remaining for token in sequence):
+            for token in sequence:
+                if token not in prioritized:
+                    prioritized.append(token)
+                remaining.remove(token)
+
+    if 'tutorial' in remaining:
+        remaining.remove('tutorial')
+        remaining.append('tutorial')
+
+    tokens = prioritized + remaining
+
+    removable = [
+        'install', 'config', 'setup', 'usage', 'detail', 'intro', 'guide',
+        'tech', 'tools', 'dev',
+    ]
+    while len('-'.join(tokens)) > MAX_FILENAME_LENGTH:
+        removed = False
+        for token in removable:
+            if token in tokens and token not in {'tutorial'}:
+                tokens.remove(token)
+                removed = True
+                break
+        if not removed:
+            break
+
+    return tokens
+
+
+def trim_filename(filename, max_length):
+    """Trim without cutting a token; preserve trailing tutorial/guide when possible."""
+    tokens = filename.split('-')
+    if len(tokens) <= 1:
+        return filename[:max_length].rstrip('-')
+
+    ending = ''
+    if tokens[-1] in {'tutorial', 'guide', 'review'}:
+        ending = tokens.pop()
+
+    while tokens and len('-'.join(tokens + ([ending] if ending else []))) > max_length:
+        tokens.pop()
+
+    if ending and ending not in tokens:
+        tokens.append(ending)
+
+    result = '-'.join(tokens).strip('-')
+    return result or filename[:max_length].rstrip('-')
 
 
 def generate_seo_keywords(title, description, tags):
@@ -354,20 +426,36 @@ def generate_seo_keywords(title, description, tags):
     Generate SEO-optimized keywords
     Focus on long-tail keywords and search intent
     """
-    keywords = set()
+    keywords = []
+
+    def add_keyword(keyword):
+        keyword = sanitize_text_for_yaml(keyword.strip())
+        if not keyword:
+            return
+        if keyword.lower() in STOP_WORDS:
+            return
+        if keyword.startswith(('http', 'https', 'www', '//')):
+            return
+        if len(keyword) < MIN_KEYWORD_LENGTH or len(keyword) > MAX_KEYWORD_LENGTH:
+            return
+        if keyword not in keywords:
+            keywords.append(keyword)
+
+    for keyword in extract_semantic_keywords(title, description):
+        add_keyword(keyword)
 
     # 1. Extract from title (highest priority)
-    title_words = re.split(r'[,，、\s]+', title)
+    title_words = re.split(r'[\s,，、:：!！?？|｜/()\[\]【】《》「」『』]+', title)
     for word in title_words:
-        word = word.strip()
-        if len(word) >= 2:
-            keywords.add(word)
+        add_keyword(word)
 
     # 2. Add user-provided tags
     if isinstance(tags, list):
-        keywords.update(tags)
+        for tag in tags:
+            add_keyword(tag)
     elif isinstance(tags, str):
-        keywords.update([t.strip() for t in tags.split(',')])
+        for tag in tags.split(','):
+            add_keyword(tag)
 
     # 3. Extract high-value keywords from description
     if description:
@@ -376,21 +464,20 @@ def generate_seo_keywords(title, description, tags):
         keyword_matches = re.findall(keyword_pattern, description)
         for match in keyword_matches:
             kws = re.split(r'[,，、\s]+', match)
-            keywords.update([kw.strip() for kw in kws if kw.strip()])
+            for kw in kws:
+                add_keyword(kw)
 
         # Extract meaningful phrases from description
         desc_sentences = re.split(r'[。！？.!?]', description)[:2]
         for sentence in desc_sentences:
             # Look for tech terms and product names
-            tech_terms = re.findall(r'[A-Z]{2,}|[A-Za-z]{3,}', sentence)
-            keywords.update(tech_terms)
-
-    # Clean and optimize keywords
-    keywords = clean_keywords(list(keywords))
+            tech_terms = re.findall(r'[A-Za-z][A-Za-z0-9+.-]*(?:\s+[A-Za-z][A-Za-z0-9+.-]*)?', sentence)
+            for term in tech_terms:
+                add_keyword(term)
 
     # Add related keywords for better SEO coverage
     final_keywords = []
-    for kw in keywords[:MAX_KEYWORDS]:
+    for kw in keywords:
         final_keywords.append(kw)
 
         # Add synonyms for important keywords
@@ -402,6 +489,67 @@ def generate_seo_keywords(title, description, tags):
     return final_keywords[:MAX_KEYWORDS]
 
 
+def extract_semantic_keywords(title, description=''):
+    """Extract canonical search keywords before falling back to raw title tokens."""
+    text = f"{title}\n{description}"
+    text_lower = text.lower()
+    keywords = []
+
+    def add(keyword):
+        if keyword not in keywords:
+            keywords.append(keyword)
+
+    # Topic-specific bundles prevent Chinese titles from turning into noisy fragments.
+    if 'claude code' in text_lower and 'happy' in text_lower:
+        for keyword in [
+            'Claude Code',
+            'Happy',
+            '手机远程控制',
+            'Happy安装配置',
+            'Claude Code远程控制',
+            '手机控制Claude Code',
+            'E2EE加密',
+            '远程开发',
+            '小白教程',
+        ]:
+            add(keyword)
+
+    if 'cloudflare' in text_lower and '邮箱' in text:
+        for keyword in [
+            'Cloudflare',
+            'Cloudflare临时邮箱',
+            '域名邮箱',
+            '免费邮箱',
+            'Workers',
+            'D1数据库',
+            'KV缓存',
+            '小白教程',
+        ]:
+            add(keyword)
+
+    phrase_keywords = [
+        ('临时邮箱', '临时邮箱'),
+        ('域名邮箱', '域名邮箱'),
+        ('自建中继', '自建中继'),
+        ('会话管理', '会话管理'),
+        ('国内网络', '国内网络'),
+        ('手机远程控制', '手机远程控制'),
+        ('安装配置', '安装配置'),
+        ('E2EE', 'E2EE加密'),
+        ('Docker', 'Docker'),
+        ('VPS', 'VPS'),
+        ('CPA', 'CPA'),
+        ('Codex', 'Codex'),
+        ('OpenAI', 'OpenAI'),
+        ('Cloudflare', 'Cloudflare'),
+    ]
+    for needle, keyword in phrase_keywords:
+        if needle.lower() in text_lower:
+            add(keyword)
+
+    return keywords
+
+
 def generate_seo_description(title, description):
     """
     Generate SEO-optimized description
@@ -409,6 +557,12 @@ def generate_seo_description(title, description):
     - Include main keywords
     - Compelling call-to-action
     """
+    specialized_desc = generate_specialized_description(title)
+    if specialized_desc:
+        return specialized_desc[:MAX_DESCRIPTION_LENGTH]
+
+    title_terms = extract_seo_terms(title)
+
     # Clean up description
     if description:
         # Remove URLs, email addresses
@@ -418,19 +572,82 @@ def generate_seo_description(title, description):
         # Remove excessive whitespace
         desc = re.sub(r'\s+', ' ', desc).strip()
 
-        # Get first meaningful sentence
+        # Prefer the most keyword-rich sentence, not simply the first sentence.
+        candidates = []
         sentences = re.split(r'[。！？.!?]', desc)
         for sentence in sentences:
-            sentence = sentence.strip()
-            if len(sentence) > 20 and len(sentence) <= MAX_DESCRIPTION_LENGTH:
-                return sentence
+            sentence = sentence.strip(' -，,；;：:')
+            if len(sentence) < 20 or len(sentence) > MAX_DESCRIPTION_LENGTH:
+                continue
+            score = score_seo_sentence(sentence, title_terms)
+            candidates.append((score, len(sentence), sentence))
+
+        candidates = [item for item in candidates if item[0] > 0]
+        if candidates:
+            candidates.sort(key=lambda item: (item[0], item[1]), reverse=True)
+            return candidates[0][2]
 
     # Fallback to title-based description
-    desc_template = f"本视频详细介绍{title}，帮助你快速了解和掌握相关知识点。"
+    desc_template = generate_title_based_description(title)
     if len(desc_template) > MAX_DESCRIPTION_LENGTH:
         desc_template = f"{title} - 详细教程与指南"
 
     return desc_template[:MAX_DESCRIPTION_LENGTH]
+
+
+def generate_specialized_description(title):
+    """Return high-quality descriptions for common tutorial categories."""
+    if re.search(r'Claude Code', title, re.IGNORECASE) and re.search(r'Happy', title, re.IGNORECASE):
+        return "Happy 安装配置教程：用手机远程控制 Claude Code，覆盖安装配对、会话管理、国内网络问题和自建中继。"
+
+    if re.search(r'Cloudflare', title, re.IGNORECASE) and '邮箱' in title:
+        return "Cloudflare 临时邮箱搭建教程，覆盖域名托管、邮件路由、D1、KV、Workers、Pages 部署和常见配置。"
+
+    return ''
+
+
+def extract_seo_terms(text):
+    """Extract terms that should appear in SEO descriptions."""
+    text_lower = text.lower()
+    terms = set()
+
+    ascii_terms = re.findall(r'[A-Za-z][A-Za-z0-9+.-]*(?:\s+[A-Za-z][A-Za-z0-9+.-]*)?', text)
+    for term in ascii_terms:
+        if len(term) >= 2:
+            terms.add(term.lower())
+
+    chinese_terms = [
+        '手机远程控制', '远程控制', '安装配置', '安装', '配置', '教程',
+        '自建中继', '会话管理', '国内网络', '网络问题', '加密',
+        '临时邮箱', '域名邮箱', '免费', '部署', 'cloudflare',
+        'vps', 'cpa', 'api', 'docker',
+    ]
+    for term in chinese_terms:
+        if term.lower() in text_lower:
+            terms.add(term.lower())
+
+    return terms
+
+
+def score_seo_sentence(sentence, terms):
+    """Score sentences by how many title/search terms they contain."""
+    sentence_lower = sentence.lower()
+    score = 0
+    for term in terms:
+        if term and term in sentence_lower:
+            score += 2 if len(term) > 4 else 1
+
+    if re.search(r'教程|安装|配置|部署|指南|全流程|手把手', sentence):
+        score += 1
+    if re.search(r'http|关注|点赞|订阅|优惠码|推荐码', sentence_lower):
+        score -= 2
+
+    return score
+
+
+def generate_title_based_description(title):
+    """Build a concise fallback that still includes title keywords."""
+    return f"{title}教程，整理核心步骤、配置方法、常见问题和参考链接。"
 
 
 def generate_post_content(video_info, config, category, tags):
@@ -468,6 +685,7 @@ def generate_post_content(video_info, config, category, tags):
         cover_image = local_thumbnail
     else:
         try:
+            import requests
             resp = requests.head(maxres_url, timeout=5, allow_redirects=True)
             cover_image = maxres_url if resp.status_code == 200 else sd_url
         except Exception:
@@ -498,7 +716,7 @@ copyright: true
     # Generate article summary
     summary = generate_article_summary(video_info)
 
-    # Generate video iframe with SEO attributes
+    # Generate video iframe with responsive wrapper
     video_iframe = f"""## 视频教程
 
 <div class="video-container"><iframe src="https://www.youtube.com/embed/{video_id}" title="{title}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
@@ -574,15 +792,177 @@ def generate_article_summary(video_info):
 """
 
 
+def normalize_description_line(line):
+    """Normalize a single YouTube description line without changing meaning."""
+    line = line.strip()
+    line = re.sub(r'\s+', ' ', line)
+    line = line.replace('：：', '：')
+    return line
+
+
+def split_inline_items(text):
+    """Split semicolon-heavy text into readable bullet items."""
+    return [item.strip() for item in re.split(r'[；;]\s*', text) if item.strip()]
+
+
+def add_heading(output, heading, current_heading):
+    """Append a heading only when it changes."""
+    if current_heading == heading:
+        return current_heading
+    if output and output[-1] != '':
+        output.append('')
+    output.extend([heading, ''])
+    return heading
+
+
+def format_resource_line(line):
+    """Convert resource/promo lines into Markdown list or quote style."""
+    if not line:
+        return []
+
+    line = normalize_description_line(line)
+
+    if line.startswith('#') and ' ' not in line:
+        return [line]
+
+    if line.startswith('注意') and ('链接' in line or '复制' in line):
+        cleaned = re.sub(r'[⚠️！!]+', '', line).strip()
+        return [f"> {cleaned}"]
+
+    if re.match(r'^\d+[.、]\s*', line):
+        line = re.sub(r'^(\d+)[、]\s*', r'\1. ', line)
+        return [line]
+
+    if re.match(r'^[-*]\s+', line):
+        return [line]
+
+    if 'http' in line or 'www.' in line:
+        return [f"- {line}"]
+
+    return [line]
+
+
+def format_colon_items(line):
+    """Format lines like '三种情况：A；B；C' as a paragraph plus bullets."""
+    match = re.match(r'^(.+?[：:])\s*(.+)$', line)
+    if not match:
+        return None
+
+    lead, rest = match.groups()
+    items = split_inline_items(rest)
+    if len(items) < 2:
+        return None
+
+    formatted = [lead]
+    for item in items:
+        formatted.append(f"- {item}")
+    return formatted
+
+
+def description_heading_for_line(line):
+    """Infer a useful section heading from common YouTube description patterns."""
+    rules = [
+        (r'^试了几种方案', '## 为什么普通远程方案不够顺手'),
+        (r'^后来翻到', '## Happy 是什么'),
+        (r'^简单说', '## 工作原理'),
+        (r'^安装就一行', '## 安装与配对'),
+        (r'^会话管理', '## 会话管理'),
+        (r'^日常用法', '## 日常用法'),
+        (r'^国内使用常见问题', '## 国内网络问题'),
+        (r'^自建中继', '## 自建中继'),
+        (r'^常见坑', '## 常见坑'),
+        (r'^出门在外想改代码', '## 本期内容概览'),
+        (r'^短信及语音接码平台', '## 短信及语音接码平台'),
+        (r'^白嫖流量', '## 白嫖流量'),
+        (r'^VPS\s*主机', '## VPS 主机推荐'),
+        (r'^Gmail、Telegram', '## 账号、礼品卡与 AI 产品充值'),
+        (r'^Claude、OpenAI', '## 账号、礼品卡与 AI 产品充值'),
+        (r'^👇?【?关注我不迷路', '## 关注与资源'),
+    ]
+
+    for pattern, heading in rules:
+        if re.search(pattern, line, re.IGNORECASE):
+            return heading
+
+    if 'playlist?list=' in line:
+        return '## YouTube 播放列表'
+
+    if re.match(r'^\d+[.、]\s*', line) and re.search(r'eSIM|Wise|N26|Bybit', line, re.IGNORECASE):
+        return '## eSIM 与支付卡推荐'
+
+    return None
+
+
+def should_skip_heading_source_line(line):
+    """Section marker lines should become headings instead of duplicated body text."""
+    markers = [
+        r'^短信及语音接码平台',
+        r'^白嫖流量',
+        r'^VPS\s*主机',
+        r'^Gmail、Telegram',
+        r'^👇?【?关注我不迷路',
+    ]
+    return any(re.search(pattern, line, re.IGNORECASE) for pattern in markers)
+
+
+def format_description_as_markdown(description):
+    """Convert long YouTube descriptions into readable Markdown sections."""
+    lines = [normalize_description_line(line) for line in description.splitlines()]
+    lines = [line for line in lines if line]
+
+    output = []
+    current_heading = None
+
+    for line in lines:
+        heading = description_heading_for_line(line)
+        if heading:
+            current_heading = add_heading(output, heading, current_heading)
+            if should_skip_heading_source_line(line):
+                continue
+
+        if current_heading and (
+            current_heading in {
+                '## 短信及语音接码平台',
+                '## 白嫖流量',
+                '## 关注与资源',
+                '## VPS 主机推荐',
+                '## 账号、礼品卡与 AI 产品充值',
+                '## eSIM 与支付卡推荐',
+                '## YouTube 播放列表',
+            }
+            or 'http' in line
+        ):
+            output.extend(format_resource_line(line))
+            continue
+
+        colon_items = format_colon_items(line)
+        if colon_items:
+            output.extend(colon_items)
+            continue
+
+        output.append(line)
+
+    # Keep Markdown readable without creating excessive vertical gaps.
+    formatted = []
+    for line in output:
+        if not line:
+            if formatted and formatted[-1] != '':
+                formatted.append('')
+            continue
+        if formatted and formatted[-1] and not line.startswith(('-', '1.', '2.', '3.', '4.', '5.', '6.', '7.', '>', '#')):
+            formatted.append('')
+        formatted.append(line)
+
+    return '\n'.join(formatted).strip()
+
+
 def generate_article_content(video_info, video_id):
     """Generate SEO-optimized article content"""
     title = video_info['title']
     uploader = video_info.get('uploader', '')
     description = video_info.get('description', '')
     duration = video_info.get('duration', 0)
-    tags = video_info.get('tags', [])
 
-    # Convert duration to minutes
     duration_min = duration // 60 if duration else 0
 
     content = f"""## 视频介绍
@@ -591,57 +971,9 @@ def generate_article_content(video_info, video_id):
 
 """
 
-    # Try to extract meaningful content from description
-    # Remove common link lines and emojis
-    desc_lines = []
-    for line in description.split('\n'):
-        line = line.strip()
-        # Skip empty lines, links, and common social media lines
-        if not line or line.startswith('http') or line.startswith('💬') or line.startswith('🔗'):
-            continue
-        if 'Telegram' in line and 't.me' in line:
-            continue
-        if 'Twitter' in line or 'x.com' in line:
-            continue
-        desc_lines.append(line)
-
-    # Join meaningful lines
-    meaningful_desc = '\n'.join(desc_lines[:30])  # Limit to first 30 meaningful lines
-
-    # Extract timestamp chapters for better content structure
-    timestamp_pattern = r'(\d{1,2}:\d{2})\s*[.\-]?\s*(.+)'
-    timestamps = re.findall(timestamp_pattern, meaningful_desc)
-
-    # Extract key features/benefits (usually marked with ✅ or similar)
-    features = []
-    for line in desc_lines:
-        if '✅' in line or '核心' in line or '亮点' in line:
-            features.append(line.replace('✅', '').strip())
-
-    if features:
-        content += "## 核心亮点\n\n"
-        for feature in features[:6]:
-            # Clean up the feature text
-            feature = re.sub(r'[🚀💡✅🎯]', '', feature)
-            feature = feature.replace('**', '').strip()
-            if feature:
-                content += f"**{feature}**\n\n"
-        content += "\n"
-
-    # Extract code examples if present
-    code_blocks = re.findall(r'```[a-z]*\n(.*?)```', meaningful_desc, re.DOTALL)
-    if code_blocks:
-        content += "## 配置示例\n\n"
-        for code in code_blocks[:2]:
-            content += f"```\n{code.strip()}\n```\n\n"
-
-    content += """## 参考链接
-
-- [YouTube视频原地址](https://www.youtube.com/watch?v={})
-- [相关推荐](https://869hr.uk)
-
----
-""".format(video_id)
+    # If description is long enough, format it into readable Markdown sections
+    if len(description.strip()) > 200:
+        content += format_description_as_markdown(description) + "\n\n"
 
     return content
 
@@ -688,8 +1020,7 @@ def humanize_article(content, video_title):
             continue
 
         # Remove or replace AI patterns
-        # Remove excessive emphasis
-        line = re.sub(r'\*\*(.*?)\*\*', r'\1', line)  # Remove bold markdown
+        # Keep useful Markdown emphasis; structured tutorials rely on bold labels.
         line = re.sub(r'🚀\*\*', '', line)  # Remove rocket emoji
 
         # Simplify overly promotional language
@@ -834,6 +1165,12 @@ def main():
     parser.add_argument('--dry-run', action='store_true', help='Generate content but don\'t save')
     parser.add_argument('--no-humanizer', action='store_true', help='Skip AI writing removal (humanizer)')
     parser.add_argument('--deploy', action='store_true', help='Auto deploy to git after saving post')
+    # Prefill arguments: when provided, skip YouTube fetch via yt-dlp
+    parser.add_argument('--prefill-title', help='Pre-filled video title (skip YouTube fetch)')
+    parser.add_argument('--prefill-description', help='Pre-filled video description (skip YouTube fetch)')
+    parser.add_argument('--prefill-video-id', help='Pre-filled video ID (skip YouTube fetch)')
+    parser.add_argument('--prefill-duration', type=int, default=0, help='Pre-filled duration in seconds')
+    parser.add_argument('--prefill-uploader', default='', help='Pre-filled uploader name')
     parser.add_argument('--thumbnail', help='Local custom thumbnail image path (copied to blog source/images/)')
 
     args = parser.parse_args()
@@ -852,11 +1189,25 @@ def main():
     else:
         posts_dir = config['posts_dir']
 
-    # Get video info
-    video_info = get_video_info(args.url)
-    if not video_info:
-        print("❌ Failed to fetch video information")
-        return 1
+    # Use pre-filled data or fetch from YouTube
+    if args.prefill_title and args.prefill_video_id:
+        video_info = {
+            'id': args.prefill_video_id,
+            'title': sanitize_text_for_yaml(args.prefill_title),
+            'description': args.prefill_description or '',
+            'uploader': args.prefill_uploader or '',
+            'upload_date': '',
+            'duration': args.prefill_duration or 0,
+            'thumbnail': '',
+            'tags': args.tags if isinstance(args.tags, list) else [args.tags],
+            'view_count': 0,
+        }
+        print(f"📋 Using pre-filled video info (skipped YouTube fetch)")
+    else:
+        video_info = get_video_info(args.url)
+        if not video_info:
+            print("❌ Failed to fetch video information")
+            return 1
 
     print(f"📹 Video: {video_info['title']}")
     print(f"👤 Uploader: {video_info.get('uploader', 'N/A')}")
