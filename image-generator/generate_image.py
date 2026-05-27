@@ -218,8 +218,9 @@ class ImageGenerator:
                 else:
                     raise
 
-        # 轮询任务状态
+        # 轮询任务状态 (指数退避: 2s → 4s → 8s → ... 上限 30s)
         start_time = time.time()
+        poll_count = 0
         while True:
             elapsed = time.time() - start_time
             if elapsed > timeout:
@@ -243,8 +244,10 @@ class ImageGenerator:
                     raise RuntimeError("图片生成失败")
 
                 else:
-                    logger.info(f"⏳ 生成中... ({elapsed:.0f}s)")
-                    time.sleep(poll_interval)
+                    delay = min(2 ** poll_count, 30)
+                    poll_count += 1
+                    logger.info(f"⏳ 生成中... ({elapsed:.0f}s, next poll in {delay}s)")
+                    time.sleep(delay)
 
             except Exception as e:
                 logger.error(f"❌ 轮询失败: {e}")

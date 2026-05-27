@@ -1,11 +1,25 @@
 ---
 name: video-voice-changer
-description: "视频变声处理工具 - 从视频提取音频，调用 voice-changer skill 变声后合并回视频。用户要求视频变声、给视频换声音、视频音色转换或处理视频音频时使用。"
+description: "[DEPRECATED] 视频变声处理工具 - voice-changer v1.6.0 已直接支持视频输入，请直接使用 voice-changer"
 version: "1.1.1"
 author: M.
+deprecated: true
+superseded_by: voice-changer
 ---
 
-# video-voice-changer Skill
+# ⚠️ DEPRECATED — video-voice-changer
+
+> **此 Skill 已被废弃**，`voice-changer` v1.6.0+ 已直接支持视频输入，
+> 无需手动提取音频再合成。请改用：
+>
+> ```bash
+> python3 ~/.claude/skills/voice-changer/scripts/voice_change.py input.mp4 -v female_3
+> ```
+>
+> 功能完全相同，且更简洁、更可靠。
+
+<details>
+<summary>点击展开旧版文档（仅供参考）</summary>
 
 > 版本: v1.1.1
 > 默认行为: 创建 `输入文件名_vc.后缀`，只有传入 `--overwrite` 才覆盖原视频。
@@ -57,8 +71,8 @@ python3 ~/.claude/skills/video-voice-changer/scripts/video_voice_change.py --hel
 - `child` - 童声
 - `robot` - 机器人
 
-## 依赖
-
 - FFmpeg / FFprobe
 - Python 3.8+
 - voice-changer skill
+
+</details>

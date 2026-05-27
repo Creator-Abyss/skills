@@ -1,7 +1,7 @@
 # 📹 YouTube Video Downloader
 
 > 仓库地址: https://github.com/wlzh/skills
-> **版本**: v1.0.0
+> **版本**: v1.1.0
 
 Download YouTube videos with full control over quality and format settings.
 
@@ -13,6 +13,7 @@ Download YouTube videos with full control over quality and format settings.
 - 🔄 **Auto-Installation** - Automatically installs yt-dlp if not present
 - 📊 **Video Information** - Shows title, duration, and uploader before downloading
 - 🎯 **Single Video Focus** - Downloads individual videos, skips playlists by default
+- 🔁 **Retry & Resume** - Automatic retry (3x) on failure, resume interrupted downloads
 
 ## 🚀 Quick Start
 
@@ -22,7 +23,7 @@ The simplest way to download a video:
 python scripts/download_video.py "https://www.youtube.com/watch?v=VIDEO_ID"
 ```
 
-This downloads the video in best available quality as MP4 to `/mnt/user-data/outputs/`.
+This downloads the video in best available quality as MP4 to `~/Downloads/`.
 
 ## 📖 Usage
 
@@ -165,12 +166,14 @@ subprocess.run([
 
 ## 📌 Important Notes
 
-- Downloads are saved to `/mnt/user-data/outputs/` by default
+- Downloads are saved to `~/Downloads/` by default
 - Video filename is automatically generated from the video title
 - The script handles installation of yt-dlp automatically
 - Only single videos are downloaded (playlists are skipped by default)
 - Higher quality videos may take longer to download and use more disk space
 - Audio-only downloads always use best quality and ignore format settings
+- **Resume support**: re-run the same command to continue an interrupted download
+- Use `--retries N` to control retry attempts (default: 3)
 
 ## ⚠️ Limitations
 
@@ -194,9 +197,10 @@ subprocess.run([
 - Verify the URL is correct
 
 **Download fails:**
-- Check your internet connection
-- Try updating yt-dlp: `pip install --upgrade yt-dlp`
-- Some videos may have regional restrictions
+- The script automatically retries up to 3 times with exponential backoff
+- For interrupted downloads, just re-run the same command to resume
+- If persistent, update yt-dlp: `pip install --upgrade yt-dlp`
+- Some videos may have regional restrictions or require authentication
 
 ## 📄 License
 

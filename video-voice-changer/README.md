@@ -1,7 +1,17 @@
-# video-voice-changer
+## ⚠️ DEPRECATED
+
+**此 Skill 已被废弃。** `voice-changer` v1.6.0+ 已直接支持视频输入，请改用：
+
+```bash
+python3 ~/.claude/skills/voice-changer/scripts/voice_change.py input.mp4 -v female_3
+```
+
+---
+
+# video-voice-changer (deprecated)
 
 > 仓库地址: https://github.com/wlzh/skills
-> 版本: v1.1.1
+> 版本: v1.1.1 (final)
 
 视频变声处理工具 - 对视频中的音频进行变声处理
 
