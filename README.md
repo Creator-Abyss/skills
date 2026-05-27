@@ -4,6 +4,22 @@ Claude Code Skills 集合 - 各种实用工具和自动化脚本的集合
 
 ## 📚 Skills 列表
 
+### 🎬 text-to-video
+MiniMax Hailuo 2.3 文生视频 / 图生视频
+
+**特点**：
+- 🎬 文本 → MP4 视频
+- 🖼️ 首帧图片 + 文本 → 视频
+- ⏱️ 6 秒 / 10 秒，768P / 1080P
+- 🎥 镜头控制指令
+- 🔄 异步生成 + 指数退避轮询
+
+**版本**: v1.0.0
+
+[查看详情 →](./text-to-video/)
+
+---
+
 ### 🎙️ youtube-to-xiaoyuzhou
 YouTube 视频自动下载并发布到小宇宙播客
 

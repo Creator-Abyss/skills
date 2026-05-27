@@ -1,0 +1,10 @@
+{
+  "api_key": "YOUR_MINIMAX_API_KEY",
+  "base_url": "https://api.minimax.io/v1",
+  "model": "MiniMax-Hailuo-2.3",
+  "default_duration": 6,
+  "default_resolution": "768P",
+  "output_dir": "~/Downloads/shell/work/text_to_video",
+  "poll_interval": 5,
+  "timeout": 600
+}
